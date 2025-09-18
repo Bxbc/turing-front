@@ -47,6 +47,8 @@
         :rows="3"
         placeholder="请输入问题... (回车发送，Shift+回车换行)"
         @keydown="handleKeydown"
+        @compositionstart="handleCompositionStart"
+        @compositionend="handleCompositionEnd"
       />
       <div class="button-group">
         <el-button type="primary" @click="sendMessage">发送</el-button>
@@ -72,6 +74,7 @@ export default {
     const messages = ref([])
     const inputMessage = ref('')
     const chatBox = ref(null)
+    const isComposing = ref(false)
 
     // 从localStorage加载对话历史
     const loadMessages = () => {
@@ -191,13 +194,27 @@ export default {
       localStorage.removeItem('chat_messages') // 清空localStorage中的对话历史
     }
 
+    const handleCompositionStart = () => {
+      isComposing.value = true
+    }
+
+    const handleCompositionEnd = () => {
+      isComposing.value = false
+    }
+
     const handleKeydown = (event) => {
       if (event.key === 'Enter') {
         if (event.shiftKey) {
           // Shift+Enter: 换行，不做任何处理，让默认行为发生
 
         } else {
-          // 单独Enter: 发送消息
+          // 检查是否在输入法输入状态
+          if (isComposing.value || event.isComposing || event.keyCode === 229) {
+            // 输入法输入状态，不发送消息，让输入法处理
+            return
+          }
+
+          // 单独Enter且非输入法状态: 发送消息
           event.preventDefault()
           sendMessage()
         }
@@ -238,6 +255,8 @@ export default {
       sendMessage,
       clearMessages,
       handleKeydown,
+      handleCompositionStart,
+      handleCompositionEnd,
       parseThinkContent
     }
   }
